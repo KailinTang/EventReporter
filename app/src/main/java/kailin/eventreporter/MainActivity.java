@@ -13,18 +13,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Get ListView object from xml.
-        ListView eventListView = (ListView) findViewById(R.id.event_list);
-
-        // Initialize an adapter.
-/*        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
-                this,
-                R.layout.event_item,
-                R.id.event_name,
-                getEventNames());*/
-        EventAdapter adapter = new EventAdapter(this);
-        // Assign adapter to ListView.
-        eventListView.setAdapter(adapter);
     }
 
 
