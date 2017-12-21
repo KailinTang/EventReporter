@@ -82,7 +82,6 @@ public class MainActivity extends AppCompatActivity implements EventFragment.OnI
                             Intent myIntent = new Intent(MainActivity.this, EventActivity.class);
                             Utils.username = username;
                             startActivity(myIntent);
-
                         } else {
                             Toast.makeText(getBaseContext(), "Please login again", Toast.LENGTH_SHORT).show();
                         }
