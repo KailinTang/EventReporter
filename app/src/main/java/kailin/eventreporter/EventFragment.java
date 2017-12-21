@@ -2,6 +2,7 @@ package kailin.eventreporter;
 
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -16,8 +17,10 @@ import android.widget.ListView;
  * A simple {@link Fragment} subclass.
  */
 public class EventFragment extends Fragment {
-
     OnItemSelectListener mCallback;
+    ListView mListView;
+
+
 
     // Container Activity must implement this interface
     public interface OnItemSelectListener {
@@ -34,33 +37,36 @@ public class EventFragment extends Fragment {
         }
     }
 
-
     public EventFragment() {
         // Required empty public constructor
     }
 
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_event, container, false);
-        ListView listView = (ListView) view.findViewById(R.id.event_list);
-        listView.setAdapter(new EventAdapter(getActivity()));
+        mListView = (ListView) view.findViewById(R.id.event_list);
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(
                 getActivity(),
                 android.R.layout.simple_list_item_1,
                 getEventNames());
 
         // Assign adapter to ListView.
-        listView.setAdapter(adapter);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                mCallback.onItemSelected(i);
-            }
-        });
+        mListView.setAdapter(adapter);
         return view;
     }
+
+    public void onItemSelected(int position){
+        for (int i = 0; i < mListView.getChildCount(); i++){
+            if (position == i) {
+                mListView.getChildAt(i).setBackgroundColor(Color.BLUE);
+            } else {
+                mListView.getChildAt(i).setBackgroundColor(Color.parseColor("#FAFAFA"));
+            }
+        }
+    }
+
 
     private String[] getEventNames() {
         String[] names = {
@@ -69,8 +75,5 @@ public class EventFragment extends Fragment {
                 "Event7", "Event8", "Event9",
                 "Event10", "Event11", "Event12"};
         return names;
-
     }
-
-
 }
