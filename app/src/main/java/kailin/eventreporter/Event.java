@@ -17,6 +17,7 @@ public class Event {
     private long time;
     private String username;
     private String imgUri;
+    private int commentNumber;
 
 
     public Event() {
@@ -96,6 +97,10 @@ public class Event {
 
     public void setImgUri(String imgUri) {
         this.imgUri = imgUri;
+    }
+
+    public int getCommentNumber() {
+        return commentNumber;
     }
 }
 
