@@ -5,8 +5,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -43,6 +45,16 @@ public class CommentActivity extends AppCompatActivity {
         mRecyclerView.setHasFixedSize(true);
         mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
+        mCommentSubmitButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendComment(eventId);
+                mEditTextComment.setText("");
+                getData(eventId, commentAdapter);
+
+            }
+        });
+
         getData(eventId, commentAdapter);
 
     }
@@ -85,5 +97,35 @@ public class CommentActivity extends AppCompatActivity {
             }
         });
     }
+
+    private void sendComment(final String eventId) {
+        String description = mEditTextComment.getText().toString();
+        if (description.equals("")) {
+            return;
+        }
+        Comment comment = new Comment();
+        comment.setCommenter(Utils.username);
+        comment.setEventId(eventId);
+        comment.setDescription(description);
+        comment.setTime(System.currentTimeMillis());
+        String key = mDatabaseReference.child("comments").push().getKey();
+        comment.setCommentId(key);
+        mDatabaseReference.child("comments").child(key).setValue(comment, new DatabaseReference.
+                CompletionListener() {
+            @Override
+            public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                if (databaseError != null) {
+                    Toast toast = Toast.makeText(getApplicationContext(), "The comment is failed," +
+                            " please check you network status.", Toast.LENGTH_SHORT);
+                    toast.show();
+                } else {
+                    Toast toast = Toast.makeText(getApplicationContext(),
+                            "The comment is reported", Toast.LENGTH_SHORT);
+                    toast.show();
+                }
+            }
+        });
+    }
+
 
 }
