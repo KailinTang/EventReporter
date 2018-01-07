@@ -20,14 +20,13 @@
             android:value="AIzaSyCr_tb0S3vCKBLJz8azcrr1EOIMl-Lf6Kg" />
 
         <activity android:name=".MainActivity">
-        </activity>
-        <activity android:name=".EventActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".EventActivity" />
         <activity
             android:name=".EventReportActivity"
             android:screenOrientation="portrait"

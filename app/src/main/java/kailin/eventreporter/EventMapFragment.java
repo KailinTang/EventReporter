@@ -1,6 +1,9 @@
 package kailin.eventreporter;
 
 
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.annotation.Nullable;
@@ -8,17 +11,36 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class EventMapFragment extends Fragment implements OnMapReadyCallback {
+public class EventMapFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnInfoWindowClickListener, GoogleMap.OnMarkerClickListener {
+    private GoogleMap mGoogleMap;
     private MapView mMapView;
     private View mView;
+    private DatabaseReference database;
+    private List<Event> events;
+    private Marker lastClicked;
 
 
     public EventMapFragment() {
@@ -31,6 +53,8 @@ public class EventMapFragment extends Fragment implements OnMapReadyCallback {
                              Bundle savedInstanceState) {
         mView = inflater.inflate(R.layout.fragment_event_map, container,
                 false);
+        database = FirebaseDatabase.getInstance().getReference();
+        events = new ArrayList<Event>();
         return mView;
     }
 
@@ -70,8 +94,108 @@ public class EventMapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     @Override
-    public void onMapReady(GoogleMap googleMap) {
+    public boolean onMarkerClick(final Marker marker) {
+        final Event event = (Event) marker.getTag();
+        if (lastClicked != null && lastClicked.equals(marker)) {
+            lastClicked = null;
+            marker.hideInfoWindow();
+            marker.setIcon(null);
+            return true;
+        } else {
+            lastClicked = marker;
+            new AsyncTask<Void, Void, Bitmap>() {
+                @Override
+                protected Bitmap doInBackground(Void... voids) {
+                    Bitmap bitmap = Utils.getBitmapFromURL(event.getImgUri());
+                    return bitmap;
+                }
+
+                @Override
+                protected void onPostExecute(Bitmap bitmap) {
+                    super.onPostExecute(bitmap);
+                    marker.setIcon(BitmapDescriptorFactory.fromBitmap(bitmap));
+                    marker.setTitle(event.getTitle());
+                }
+            }.execute();
+            return false;
+        }
     }
 
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        MapsInitializer.initialize(getContext());
+        mGoogleMap = googleMap;
+        mGoogleMap.setOnInfoWindowClickListener(this);
+        mGoogleMap.setOnMarkerClickListener(this);
+        final LocationTracker locationTracker = new LocationTracker(getActivity());
+        locationTracker.getLocation();
+
+        double curLatitude = locationTracker.getLatitude();
+        double curLongitude = locationTracker.getLongitude();
+
+        CameraPosition cameraPosition = new CameraPosition.Builder()
+                .target(new LatLng(curLatitude, curLongitude)).zoom(12).build();
+        googleMap.animateCamera(CameraUpdateFactory
+                .newCameraPosition(cameraPosition));
+        setUpMarkersCloseToCurLocation(googleMap, curLatitude, curLongitude);
+    }
+
+
+    private void setUpMarkersCloseToCurLocation(final GoogleMap googleMap,
+                                                final double curLatitude,
+                                                final double curLongitude) {
+        events.clear();
+        database.child("events").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                // Get all available events
+                for (DataSnapshot noteDataSnapshot : dataSnapshot.getChildren()) {
+                    Event event = noteDataSnapshot.getValue(Event.class);
+                    double destLatitude = event.getLatitude();
+                    double destLongitude = event.getLongitude();
+                    int distance = Utils.distanceBetweenTwoLocations(curLatitude, curLongitude,
+                            destLatitude, destLongitude);
+                    if (distance <= 10) {
+                        events.add(event);
+                    }
+                }
+
+                // Set up every events
+                for (Event event : events) {
+                    // create marker
+                    MarkerOptions marker = new MarkerOptions().position(
+                            new LatLng(event.getLatitude(), event.getLongitude())).
+                            title(event.getTitle());
+
+                    // Changing marker icon
+                    marker.icon(BitmapDescriptorFactory
+                            .defaultMarker(BitmapDescriptorFactory.HUE_ROSE));
+
+                    // adding marker
+                    Marker mker = googleMap.addMarker(marker);
+                    mker.setTag(event);
+
+                    // adding marker
+                    googleMap.addMarker(marker);
+                }
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                //TODO: do something
+            }
+        });
+    }
+
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+        Event event = (Event) marker.getTag();
+        Intent intent = new Intent(getContext(), CommentActivity.class);
+        String eventId = event.getId();
+        intent.putExtra("EventID", eventId);
+        getContext().startActivity(intent);
+    }
 
 }
